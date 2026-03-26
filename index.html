@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MINESWEEPER.EXE</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div id="app">
+    <header id="header">
+      <div class="header-block">
+        <span class="label">GLITCHES</span>
+        <span id="mine-count">040</span>
+      </div>
+      <div class="header-center">
+        <h1 id="title">MINESWEEPER<span class="blink">.EXE</span></h1>
+        <div id="status-bar">
+          <span id="status-text">[ CLICK TO INITIALIZE ]</span>
+        </div>
+      </div>
+      <div class="header-block">
+        <span class="label">TIMER</span>
+        <span id="timer">00:00</span>
+      </div>
+    </header>
+
+    <main>
+      <div id="grid"></div>
+    </main>
+
+    <footer id="footer">
+      <span>LMB: SCAN &nbsp;|&nbsp; RMB: FLAG GLITCH &nbsp;|&nbsp; SCORE: <span id="score">----</span></span>
+    </footer>
+  </div>
+
+  <!-- Win/Lose Overlay -->
+  <div id="overlay" class="hidden">
+    <div id="overlay-box">
+      <div id="overlay-scanline"></div>
+      <h2 id="overlay-title"></h2>
+      <div id="overlay-stats">
+        <div class="stat-row"><span class="stat-label">TIME</span><span id="stat-time">--:--</span></div>
+        <div class="stat-row"><span class="stat-label">SCORE</span><span id="stat-score">----</span></div>
+      </div>
+      <button id="replay-btn">[ REPLAY ]</button>
+    </div>
+  </div>
+
+  <script src="game.js"></script>
+</body>
+</html>

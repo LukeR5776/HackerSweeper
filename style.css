@@ -1,0 +1,479 @@
+/* =============================================
+   MINESWEEPER.EXE — HACKER THEME
+   ============================================= */
+
+:root {
+  --green:      #00ff41;
+  --green-dim:  #00cc33;
+  --green-dark: #003311;
+  --cyan:       #00ffff;
+  --yellow:     #ffff00;
+  --orange:     #ff8800;
+  --red:        #ff3333;
+  --magenta:    #ff00ff;
+  --white:      #ffffff;
+  --gray:       #888888;
+  --bg:         #080808;
+  --bg2:        #0d0d0d;
+  --bg3:        #111611;
+  --border:     #1a3320;
+  --cell-size:  36px;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body {
+  width: 100%;
+  height: 100%;
+  background: var(--bg);
+  color: var(--green);
+  font-family: 'Courier New', Courier, monospace;
+  overflow-x: hidden;
+  user-select: none;
+}
+
+/* Subtle scanline overlay */
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0, 0, 0, 0.15) 2px,
+    rgba(0, 0, 0, 0.15) 4px
+  );
+  pointer-events: none;
+  z-index: 9999;
+}
+
+/* =============================================
+   LAYOUT
+   ============================================= */
+
+#app {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-height: 100vh;
+  padding: 24px 16px;
+  gap: 16px;
+}
+
+/* =============================================
+   HEADER
+   ============================================= */
+
+#header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  max-width: 620px;
+  border: 1px solid var(--border);
+  background: var(--bg2);
+  padding: 12px 20px;
+  box-shadow: 0 0 16px rgba(0, 255, 65, 0.08);
+}
+
+.header-block {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  min-width: 80px;
+}
+
+.header-block .label {
+  font-size: 10px;
+  letter-spacing: 2px;
+  color: var(--green-dim);
+  opacity: 0.7;
+}
+
+#mine-count,
+#timer {
+  font-size: 28px;
+  font-weight: bold;
+  letter-spacing: 4px;
+  color: var(--green);
+  text-shadow: 0 0 8px var(--green), 0 0 20px rgba(0, 255, 65, 0.4);
+}
+
+.header-center {
+  text-align: center;
+}
+
+#title {
+  font-size: 18px;
+  letter-spacing: 6px;
+  color: var(--green);
+  text-shadow: 0 0 10px var(--green);
+  text-transform: uppercase;
+}
+
+.blink {
+  animation: blink 1.2s step-end infinite;
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+#status-bar {
+  margin-top: 4px;
+  font-size: 10px;
+  letter-spacing: 1px;
+  color: var(--green-dim);
+  opacity: 0.8;
+}
+
+/* =============================================
+   GRID
+   ============================================= */
+
+main {
+  display: flex;
+  justify-content: center;
+}
+
+#grid {
+  display: grid;
+  grid-template-columns: repeat(16, var(--cell-size));
+  grid-template-rows: repeat(16, var(--cell-size));
+  border: 1px solid var(--border);
+  box-shadow:
+    0 0 24px rgba(0, 255, 65, 0.1),
+    inset 0 0 8px rgba(0, 0, 0, 0.8);
+  background: var(--bg);
+}
+
+/* =============================================
+   CELLS
+   ============================================= */
+
+.cell {
+  width: var(--cell-size);
+  height: var(--cell-size);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: bold;
+  cursor: pointer;
+  border: 1px solid var(--border);
+  background: var(--bg2);
+  color: var(--green);
+  transition: background 0.1s, box-shadow 0.1s;
+  position: relative;
+  overflow: hidden;
+}
+
+.cell:hover {
+  background: var(--bg3);
+  box-shadow: inset 0 0 8px rgba(0, 255, 65, 0.12);
+}
+
+/* Revealed cell */
+.cell.revealed {
+  background: var(--bg);
+  cursor: default;
+  border-color: #0d1a0d;
+}
+
+.cell.revealed:hover {
+  box-shadow: none;
+}
+
+/* Flagged cell */
+.cell.flagged {
+  color: var(--green);
+  text-shadow: 0 0 8px var(--green), 0 0 16px rgba(0, 255, 65, 0.5);
+  animation: flagPulse 1.8s ease-in-out infinite;
+}
+
+@keyframes flagPulse {
+  0%, 100% { box-shadow: inset 0 0 6px rgba(0, 255, 65, 0.2); }
+  50%       { box-shadow: inset 0 0 12px rgba(0, 255, 65, 0.5); }
+}
+
+/* Mine cell (exploded) */
+.cell.mine-hit {
+  background: #1a0000;
+  border-color: var(--red);
+  animation: cellGlitch 0.5s ease forwards;
+}
+
+/* Mine cell (revealed on game over, not the hit one) */
+.cell.mine-reveal {
+  background: #100000;
+  border-color: #330000;
+  color: var(--red);
+  opacity: 0.8;
+}
+
+/* =============================================
+   NUMBER COLORS
+   ============================================= */
+
+.cell[data-n="1"] { color: var(--green); }
+.cell[data-n="2"] { color: var(--cyan); }
+.cell[data-n="3"] { color: var(--yellow); }
+.cell[data-n="4"] { color: var(--orange); }
+.cell[data-n="5"] { color: var(--red); }
+.cell[data-n="6"] { color: var(--magenta); }
+.cell[data-n="7"] { color: var(--white); }
+.cell[data-n="8"] { color: var(--gray); }
+
+.cell[data-n="1"] { text-shadow: 0 0 6px var(--green); }
+.cell[data-n="2"] { text-shadow: 0 0 6px var(--cyan); }
+.cell[data-n="3"] { text-shadow: 0 0 6px var(--yellow); }
+.cell[data-n="4"] { text-shadow: 0 0 6px var(--orange); }
+.cell[data-n="5"] { text-shadow: 0 0 6px var(--red); }
+.cell[data-n="6"] { text-shadow: 0 0 6px var(--magenta); }
+.cell[data-n="7"] { text-shadow: 0 0 4px rgba(255,255,255,0.5); }
+
+/* =============================================
+   REVEAL ANIMATION (scramble glow)
+   ============================================= */
+
+.cell.scrambling {
+  color: var(--green-dim);
+  text-shadow: none;
+}
+
+.cell.reveal-flash {
+  animation: revealFlash 0.25s ease forwards;
+}
+
+@keyframes revealFlash {
+  0%   { background: #003311; box-shadow: inset 0 0 16px rgba(0, 255, 65, 0.6); }
+  100% { background: var(--bg); box-shadow: none; }
+}
+
+/* =============================================
+   GLITCH ANIMATIONS
+   ============================================= */
+
+/* Cell glitch on mine hit */
+@keyframes cellGlitch {
+  0%   { transform: translate(0,0);    filter: hue-rotate(0deg);   background: var(--red); }
+  10%  { transform: translate(-3px,2px); filter: hue-rotate(90deg);  background: #ff6600; }
+  20%  { transform: translate(3px,-2px); filter: hue-rotate(180deg); background: #ff0000; }
+  30%  { transform: translate(-2px,3px); filter: hue-rotate(270deg); background: #cc0000; }
+  40%  { transform: translate(2px,-3px); filter: hue-rotate(0deg);   background: var(--red); }
+  50%  { transform: translate(-3px,1px); filter: brightness(2);      background: #ff4444; }
+  60%  { transform: translate(3px,-1px); filter: brightness(1);      background: #880000; }
+  70%  { transform: translate(0,0);     filter: hue-rotate(45deg);  background: #1a0000; }
+  100% { transform: translate(0,0);     filter: none;               background: #1a0000; }
+}
+
+/* Screen-wide glitch on lose */
+body.glitch-screen {
+  animation: screenGlitch 0.6s ease forwards;
+}
+
+@keyframes screenGlitch {
+  0%   { filter: none;                              transform: translate(0,0); }
+  5%   { filter: hue-rotate(90deg) saturate(3);     transform: translate(-4px, 0); }
+  10%  { filter: hue-rotate(180deg) saturate(5);    transform: translate(4px, -2px); }
+  15%  { filter: hue-rotate(270deg) invert(0.1);    transform: translate(-2px, 2px); }
+  20%  { filter: hue-rotate(0deg) saturate(8) brightness(1.5); transform: translate(3px, 0); }
+  25%  { filter: hue-rotate(45deg) saturate(2);     transform: translate(-3px, 1px); }
+  30%  { filter: none;                              transform: translate(0,0); }
+  35%  { filter: hue-rotate(200deg) saturate(4);    transform: translate(2px,-1px); }
+  40%  { filter: none;                              transform: translate(0,0); }
+  50%  { filter: hue-rotate(90deg) brightness(1.2); transform: translate(-1px, 0); }
+  60%  { filter: none;                              transform: translate(0,0); }
+  100% { filter: none;                              transform: translate(0,0); }
+}
+
+/* =============================================
+   FOOTER
+   ============================================= */
+
+#footer {
+  font-size: 11px;
+  letter-spacing: 1px;
+  color: var(--green-dim);
+  opacity: 0.6;
+  text-align: center;
+}
+
+/* =============================================
+   OVERLAY (WIN / LOSE)
+   ============================================= */
+
+#overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: overlayFadeIn 0.4s ease forwards;
+}
+
+#overlay.hidden {
+  display: none;
+}
+
+@keyframes overlayFadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+#overlay-box {
+  position: relative;
+  border: 2px solid var(--green);
+  background: var(--bg2);
+  padding: 40px 60px;
+  text-align: center;
+  box-shadow:
+    0 0 40px rgba(0, 255, 65, 0.3),
+    0 0 80px rgba(0, 255, 65, 0.1),
+    inset 0 0 20px rgba(0, 0, 0, 0.5);
+  animation: boxGlitchIn 0.4s ease forwards;
+  min-width: 320px;
+  overflow: hidden;
+}
+
+#overlay-box.lose-box {
+  border-color: var(--red);
+  box-shadow:
+    0 0 40px rgba(255, 51, 51, 0.4),
+    0 0 80px rgba(255, 51, 51, 0.1),
+    inset 0 0 20px rgba(0, 0, 0, 0.5);
+}
+
+@keyframes boxGlitchIn {
+  0%   { transform: scaleX(0.02) scaleY(1); opacity: 0; filter: hue-rotate(180deg); }
+  30%  { transform: scaleX(1.05) scaleY(0.98); opacity: 0.8; filter: hue-rotate(45deg); }
+  50%  { transform: scaleX(0.99) scaleY(1.01); filter: hue-rotate(0deg); }
+  70%  { transform: scaleX(1.01) scaleY(0.99); }
+  100% { transform: scale(1); opacity: 1; filter: none; }
+}
+
+/* Scanline sweep inside overlay */
+#overlay-scanline {
+  position: absolute;
+  top: -100%;
+  left: 0;
+  width: 100%;
+  height: 60%;
+  background: linear-gradient(
+    to bottom,
+    transparent,
+    rgba(0, 255, 65, 0.04),
+    transparent
+  );
+  animation: scanSweep 2s linear infinite;
+  pointer-events: none;
+}
+
+@keyframes scanSweep {
+  from { top: -60%; }
+  to   { top: 100%; }
+}
+
+#overlay-title {
+  font-size: 32px;
+  letter-spacing: 8px;
+  text-transform: uppercase;
+  margin-bottom: 32px;
+  text-shadow: 0 0 12px currentColor, 0 0 30px currentColor;
+}
+
+#overlay-title.win  { color: var(--green); }
+#overlay-title.lose { color: var(--red); animation: titleGlitch 0.8s ease 0.3s both; }
+
+@keyframes titleGlitch {
+  0%   { transform: translate(0,0); filter: none; }
+  15%  { transform: translate(-4px, 0); filter: hue-rotate(90deg); }
+  30%  { transform: translate(4px, 0);  filter: hue-rotate(180deg); }
+  45%  { transform: translate(-2px, 0); filter: hue-rotate(270deg); }
+  60%  { transform: translate(2px, 0);  filter: hue-rotate(0deg); }
+  100% { transform: translate(0,0); filter: none; }
+}
+
+#overlay-stats {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 32px;
+}
+
+.stat-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 40px;
+  font-size: 16px;
+  letter-spacing: 2px;
+}
+
+.stat-label {
+  color: var(--green-dim);
+  opacity: 0.7;
+}
+
+#stat-time,
+#stat-score {
+  color: var(--green);
+  text-shadow: 0 0 6px var(--green);
+}
+
+#replay-btn {
+  background: transparent;
+  border: 1px solid var(--green);
+  color: var(--green);
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 14px;
+  letter-spacing: 4px;
+  padding: 10px 28px;
+  cursor: pointer;
+  text-transform: uppercase;
+  transition: background 0.15s, box-shadow 0.15s, color 0.15s;
+}
+
+#replay-btn:hover {
+  background: var(--green);
+  color: var(--bg);
+  box-shadow: 0 0 16px var(--green), 0 0 32px rgba(0, 255, 65, 0.3);
+}
+
+#replay-btn:active {
+  transform: scale(0.97);
+}
+
+/* Lose overlay overrides */
+#overlay.lose-overlay #overlay-title {
+  color: var(--red);
+}
+#overlay.lose-overlay #overlay-box {
+  border-color: var(--red);
+  box-shadow: 0 0 40px rgba(255,51,51,0.4), 0 0 80px rgba(255,51,51,0.1), inset 0 0 20px rgba(0,0,0,0.5);
+}
+#overlay.lose-overlay #stat-time,
+#overlay.lose-overlay #stat-score {
+  color: var(--red);
+  text-shadow: 0 0 6px var(--red);
+}
+#overlay.lose-overlay #replay-btn {
+  border-color: var(--red);
+  color: var(--red);
+}
+#overlay.lose-overlay #replay-btn:hover {
+  background: var(--red);
+  color: var(--bg);
+  box-shadow: 0 0 16px var(--red);
+}
+#overlay.lose-overlay #overlay-scanline {
+  background: linear-gradient(to bottom, transparent, rgba(255,51,51,0.04), transparent);
+}
